@@ -3,37 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Chat Room</title>
+    <title>Chat App</title>
     <style>
+        /* Global Styles */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            background-color: #f4f4f9; /* Light grey background */
+            color: #333; /* Dark grey text */
         }
 
-        #chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        header {
+            background-color: #001f3f; /* Navy blue */
+            color: #ffffff; /* White text */
+            padding: 1rem;
+            text-align: center;
         }
 
-        #messages {
+        button {
+            background-color: #001f3f; /* Navy blue */
+            color: #ffffff; /* White text */
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #00509e; /* Lighter navy for hover effect */
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff; /* White background for content areas */
+            border: 1px solid #ccc; /* Light grey border */
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        footer {
+            background-color: #001f3f; /* Navy blue */
+            color: #ffffff; /* White text */
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Chat Screen Styles */
+        #login-screen, #chat-container, #adult-chat-screen, #storage-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        #login-screen.active, #chat-container.active, #adult-chat-screen.active, #storage-screen.active {
+            display: flex;
+        }
+
+        #login-screen input, #login-screen button, #adult-chat-screen button, #storage-screen button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #messages, #adult-messages, #storage-logs {
             flex: 1;
             overflow-y: auto;
             padding: 10px;
             border: 1px solid #ccc;
             background-color: #f9f9f9;
-        }
-
-        #messages div {
-            margin-bottom: 10px;
+            max-height: 300px;
+            width: 100%;
         }
 
         #input-container {
             display: flex;
+            width: 100%;
             border-top: 1px solid #ccc;
         }
 
@@ -47,60 +103,173 @@
         #input-container button {
             padding: 10px 20px;
             border: none;
-            background-color: #007BFF;
+            background-color: #001f3f;
             color: white;
             cursor: pointer;
         }
 
         #input-container button:hover {
-            background-color: #0056b3;
+            background-color: #00509e;
+        }
+
+        .switch-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #001f3f;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .switch-button:hover {
+            background-color: #00509e;
+        }
+
+        img, .file-link {
+            max-width: 100%;
+            margin-top: 10px;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Online Chat Room</h1>
+    <!-- Login Screen -->
+    <div id="login-screen" class="active">
+        <h1>Welcome to the Chat Room</h1>
+        <input type="text" id="username-input" placeholder="Enter your username" />
+        <input type="email" id="email-input" placeholder="Enter your email" />
+        <button id="login-button">Join Chat</button>
+    </div>
+
+    <!-- Chat Screen -->
     <div id="chat-container">
+        <h1>Chat Room</h1>
         <div id="messages"></div>
         <div id="input-container">
             <input type="text" id="message-input" placeholder="Type your message..." />
             <button id="send-button">Send</button>
         </div>
+        <button class="switch-button" id="switch-to-adult-chat">18+ Chat</button>
+        <button class="switch-button" id="switch-to-storage">Storage</button>
+    </div>
+
+    <!-- 18+ Chat Screen -->
+    <div id="adult-chat-screen">
+        <h1>18+ Chat</h1>
+        <div id="adult-messages"></div>
+        <div id="input-container">
+            <input type="text" id="adult-message-input" placeholder="Type your 18+ message..." />
+            <button id="adult-send-button">Send</button>
+        </div>
+        <input type="file" id="file-upload" multiple style="margin-top: 10px;" />
+        <button class="switch-button" id="back-to-main-chat">Back to Chat</button>
+    </div>
+
+    <!-- Storage Screen -->
+    <div id="storage-screen">
+        <h1>Chat Logs</h1>
+        <div id="storage-logs"></div>
+        <button class="switch-button" id="back-to-chat-from-storage">Back to Chat</button>
     </div>
 
     <script>
+        const loginScreen = document.getElementById('login-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const adultChatScreen = document.getElementById('adult-chat-screen');
+        const storageScreen = document.getElementById('storage-screen');
+        const usernameInput = document.getElementById('username-input');
+        const emailInput = document.getElementById('email-input');
+        const loginButton = document.getElementById('login-button');
         const messagesDiv = document.getElementById('messages');
-        const input = document.getElementById('message-input');
+        const adultMessagesDiv = document.getElementById('adult-messages');
+        const storageLogsDiv = document.getElementById('storage-logs');
+        const messageInput = document.getElementById('message-input');
+        const adultMessageInput = document.getElementById('adult-message-input');
         const sendButton = document.getElementById('send-button');
+        const adultSendButton = document.getElementById('adult-send-button');
+        const switchToAdultChatButton = document.getElementById('switch-to-adult-chat');
+        const switchToStorageButton = document.getElementById('switch-to-storage');
+        const backToMainChatButton = document.getElementById('back-to-main-chat');
+        const backToChatFromStorageButton = document.getElementById('back-to-chat-from-storage');
+        const fileUpload = document.getElementById('file-upload');
 
-        // Replace with your WebSocket server URL
-        const socket = new WebSocket('ws://localhost:8080');
-
-        // Display received messages
-        socket.onmessage = (event) => {
-            const message = document.createElement('div');
-            message.textContent = event.data;
-            messagesDiv.appendChild(message);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to the bottom
+        let username = '';
+        let email = '';
+        let chatLogs = {
+            mainChat: [],
+            adultChat: []
         };
 
-        // Send a message when the "Send" button is clicked
+        loginButton.addEventListener('click', () => {
+            username = usernameInput.value.trim();
+            email = emailInput.value.trim();
+            if (!username || !email) return alert('Please provide valid credentials!');
+            loginScreen.classList.remove('active');
+            chatContainer.classList.add('active');
+        });
+
         sendButton.addEventListener('click', () => {
-            sendMessage();
+            sendMessage(messageInput, messagesDiv, 'mainChat');
         });
 
-        // Send a message when pressing "Enter"
-        input.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                sendMessage();
+        adultSendButton.addEventListener('click', () => {
+            sendMessage(adultMessageInput, adultMessagesDiv, 'adultChat');
+        });
+
+        switchToAdultChatButton.addEventListener('click', () => {
+            chatContainer.classList.remove('active');
+            adultChatScreen.classList.add('active');
+        });
+
+        backToMainChatButton.addEventListener('click', () => {
+            adultChatScreen.classList.remove('active');
+            chatContainer.classList.add('active');
+        });
+
+        switchToStorageButton.addEventListener('click', () => {
+            chatContainer.classList.remove('active');
+            storageScreen.classList.add('active');
+            displayChatLogs();
+        });
+
+        backToChatFromStorageButton.addEventListener('click', () => {
+            storageScreen.classList.remove('active');
+            chatContainer.classList.add('active');
+        });
+
+        fileUpload.addEventListener('change', (event) => {
+            const files = event.target.files;
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        adultMessagesDiv.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(file);
+                    link.download = file.name;
+                    link.textContent = `Download: ${file.name}`;
+                    adultMessagesDiv.appendChild(link);
+                }
             }
         });
 
-        function sendMessage() {
+        function sendMessage(input, container, type) {
             const message = input.value.trim();
-            if (message) {
-                socket.send(message); // Send the message to the server
-                input.value = ''; // Clear the input field
-            }
+            if (!message) return;
+            container.innerHTML += `<div>${username}: ${message}</div>`;
+            chatLogs[type].push(message);
+            input.value = '';
+        }
+
+        function displayChatLogs() {
+            storageLogsDiv.innerHTML = '<h3>Main Chat Logs:</h3>' + chatLogs.mainChat.map(log => `<div>${log}</div>`).join('');
+            storageLogsDiv.innerHTML += '<h3>18+ Chat Logs:</h3>' + chatLogs.adultChat.map(log => `<div>${log}</div>`).join('');
         }
     </script>
 </body>
