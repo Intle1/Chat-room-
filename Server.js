@@ -1,15 +1,23 @@
-const express = require('express');
-const path = require('path');
+const WebSocket = require('ws');
 
-const app = express();
-
-// Serve the static HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+const wss = new WebSocket.Server({ port: 8080 }, () => {
+    console.log('WebSocket server is running on ws://localhost:8080');
 });
 
-// Start the server on port 8080
-const PORT = 8080;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+wss.on('connection', (ws) => {
+    console.log('New client connected');
+
+    // Broadcast messages to all connected clients
+    ws.on('message', (message) => {
+        console.log(`Received: ${message}`);
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(message);
+            }
+        });
+    });
+
+    ws.on('close', () => {
+        console.log('Client disconnected');
+    });
 });
