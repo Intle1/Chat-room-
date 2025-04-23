@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+  <style>
+    /* CSS Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 20px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .chat-room {
+      display: none;
+      flex-direction: column;
+      width: 80%;
+      height: 80%;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-logs {
+      display: none;
+      flex-direction: column;
+      width: 80%;
+      height: 80%;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+
+    .chat-header {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .chat-message {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 5px;
+    }
+
+    .chat-message .sender {
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .chat-message .timestamp {
+      font-size: 12px;
+      color: #666;
+      margin-left: 10px;
+    }
+
+    .chat-input {
+      display: flex;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+
+    .chat-input button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .log-messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+    }
+
+    p {
+      color: red;
+      font-size: 14px;
+      margin-top: -10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="username-screen">
+    <h1>Make a Username</h1>
+    <input type="text" id="username" placeholder="Enter your username" />
+    <button id="submit-button" onclick="submitUsername()">Submit</button>
+    <p id="feedback"></p>
+  </div>
+
+  <div class="chat-room" id="chat-room">
+    <div class="chat-header">Chat Room</div>
+    <div class="chat-messages" id="messages">
+      <!-- Chat messages will appear here -->
+    </div>
+    <div class="chat-input">
+      <input type="text" id="message-input" placeholder="Type your message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <div class="chat-logs" id="chat-logs">
+    <div class="chat-header">Chat Logs</div>
+    <div class="log-messages" id="log-messages">
+      <!-- Log messages will appear here -->
+    </div>
+  </div>
+
+  <script>
+    // Store the user's username
+    let currentUsername = '';
+    const allMessages = []; // Array to store all messages
+
+    // Function to handle username submission
+    function submitUsername() {
+      const username = document.getElementById('username').value;
+      const feedback = document.getElementById('feedback');
+      const messages = document.getElementById('messages');
+
+      if (username.trim().length < 3) {
+        feedback.textContent = "Username must be at least 3 characters long.";
+        feedback.style.color = "red";
+      } else {
+        feedback.textContent = "";
+        currentUsername = username; // Set the current username
+
+        // Hide the username screen and show the chat room
+        document.getElementById('username-screen').style.display = 'none';
+        document.getElementById('chat-room').style.display = 'flex';
+
+        // Notify that the user has joined the chat
+        const joinMessage = `${currentUsername} has joined the chat.`;
+        addMessageToChat('System', joinMessage);
+      }
+    }
+
+    // Function to send a message
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      const messages = document.getElementById('messages');
+
+      if (input.value.trim() === "logs") {
+        // Switch to logs view when 'logs' command is typed
+        showLogs();
+        input.value = "";
+        return;
+      }
+
+      if (input.value.trim() !== "") {
+        const timestamp = new Date();
+        const formattedTimestamp = timestamp.toLocaleDateString() + ' ' + timestamp.toLocaleTimeString();
+        addMessageToChat(currentUsername, input.value, formattedTimestamp);
+        input.value = "";
+      }
+    }
+
+    // Function to add a message to the chat and logs
+    function addMessageToChat(sender, messageText, timestamp = "") {
+      const messages = document.getElementById('messages');
+      const logMessages = document.getElementById('log-messages');
+
+      const message = document.createElement('div');
+      message.classList.add('chat-message');
+      message.innerHTML = `
+        <span class="sender">${sender}</span>
+        ${timestamp ? `<span class="timestamp">${timestamp}</span>` : ""}
+        <div class="message-text">${messageText}</div>
+      `;
+
+      // Add the message to chat
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
+
+      // Add the message to logs
+      allMessages.push({ sender, messageText, timestamp });
+      const logMessage = message.cloneNode(true);
+      logMessages.appendChild(logMessage);
+    }
+
+    // Function to show logs view
+    function showLogs() {
+      document.getElementById('chat-room').style.display = 'none';
+      document.getElementById('chat-logs').style.display = 'flex';
+    }
+  </script>
+</body>
+</html>
