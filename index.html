@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat Room</title>
   <style>
-    /* CSS Styles */
+    /* Basic styles */
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f0f0;
@@ -16,11 +16,14 @@
       margin: 0;
     }
 
-    .container {
+    .container, .chat-room {
       background: white;
       padding: 20px 40px;
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
       text-align: center;
     }
 
@@ -55,24 +58,8 @@
     .chat-room {
       display: none;
       flex-direction: column;
-      width: 80%;
-      height: 80%;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .chat-logs {
-      display: none;
-      flex-direction: column;
-      width: 80%;
-      height: 80%;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      overflow-y: auto;
+      width: 90%;
+      height: 90%;
     }
 
     .chat-header {
@@ -88,6 +75,7 @@
       border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 20px;
+      height: 400px;
     }
 
     .chat-message {
@@ -96,12 +84,12 @@
       padding-bottom: 5px;
     }
 
-    .chat-message .sender {
+    .sender {
       font-weight: bold;
       color: #007bff;
     }
 
-    .chat-message .timestamp {
+    .timestamp {
       font-size: 12px;
       color: #666;
       margin-left: 10px;
@@ -113,29 +101,7 @@
 
     .chat-input input {
       flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 16px;
       margin-right: 10px;
-    }
-
-    .chat-input button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .log-messages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-top: 20px;
     }
 
     p {
@@ -149,104 +115,67 @@
   <div class="container" id="username-screen">
     <h1>Make a Username</h1>
     <input type="text" id="username" placeholder="Enter your username" />
-    <button id="submit-button" onclick="submitUsername()">Submit</button>
+    <button onclick="submitUsername()">Submit</button>
     <p id="feedback"></p>
   </div>
 
   <div class="chat-room" id="chat-room">
     <div class="chat-header">Chat Room</div>
-    <div class="chat-messages" id="messages">
-      <!-- Chat messages will appear here -->
-    </div>
+    <div class="chat-messages" id="messages"></div>
     <div class="chat-input">
       <input type="text" id="message-input" placeholder="Type your message..." />
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
-  <div class="chat-logs" id="chat-logs">
-    <div class="chat-header">Chat Logs</div>
-    <div class="log-messages" id="log-messages">
-      <!-- Log messages will appear here -->
-    </div>
-  </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    // Store the user's username
+    const socket = io();
     let currentUsername = '';
-    const allMessages = []; // Array to store all messages
 
-    // Function to handle username submission
     function submitUsername() {
-      const username = document.getElementById('username').value;
+      const usernameInput = document.getElementById('username');
       const feedback = document.getElementById('feedback');
-      const messages = document.getElementById('messages');
+      const username = usernameInput.value.trim();
 
-      if (username.trim().length < 3) {
+      if (username.length < 3) {
         feedback.textContent = "Username must be at least 3 characters long.";
-        feedback.style.color = "red";
       } else {
-        feedback.textContent = "";
-        currentUsername = username; // Set the current username
-
-        // Hide the username screen and show the chat room
+        currentUsername = username;
         document.getElementById('username-screen').style.display = 'none';
         document.getElementById('chat-room').style.display = 'flex';
 
-        // Notify that the user has joined the chat
-        const joinMessage = `${currentUsername} has joined the chat.`;
-        addMessageToChat('System', joinMessage);
+        socket.emit('chat message', {
+          username: 'System',
+          message: `${currentUsername} has joined the chat.`
+        });
       }
     }
 
-    // Function to send a message
     function sendMessage() {
       const input = document.getElementById('message-input');
-      const messages = document.getElementById('messages');
-
-      if (input.value.trim() === "logs") {
-        // Switch to logs view when 'logs' command is typed
-        showLogs();
-        input.value = "";
-        return;
-      }
-
-      if (input.value.trim() !== "") {
-        const timestamp = new Date();
-        const formattedTimestamp = timestamp.toLocaleDateString() + ' ' + timestamp.toLocaleTimeString();
-        addMessageToChat(currentUsername, input.value, formattedTimestamp);
-        input.value = "";
+      const message = input.value.trim();
+      if (message) {
+        socket.emit('chat message', {
+          username: currentUsername,
+          message
+        });
+        input.value = '';
       }
     }
 
-    // Function to add a message to the chat and logs
-    function addMessageToChat(sender, messageText, timestamp = "") {
-      const messages = document.getElementById('messages');
-      const logMessages = document.getElementById('log-messages');
-
-      const message = document.createElement('div');
-      message.classList.add('chat-message');
-      message.innerHTML = `
-        <span class="sender">${sender}</span>
-        ${timestamp ? `<span class="timestamp">${timestamp}</span>` : ""}
-        <div class="message-text">${messageText}</div>
+    socket.on('chat message', ({ username, message, timestamp }) => {
+      const messagesDiv = document.getElementById('messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('chat-message');
+      messageDiv.innerHTML = `
+        <span class="sender">${username}</span>
+        <span class="timestamp">${timestamp}</span>
+        <div class="message-text">${message}</div>
       `;
-
-      // Add the message to chat
-      messages.appendChild(message);
-      messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
-
-      // Add the message to logs
-      allMessages.push({ sender, messageText, timestamp });
-      const logMessage = message.cloneNode(true);
-      logMessages.appendChild(logMessage);
-    }
-
-    // Function to show logs view
-    function showLogs() {
-      document.getElementById('chat-room').style.display = 'none';
-      document.getElementById('chat-logs').style.display = 'flex';
-    }
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
   </script>
 </body>
 </html>
